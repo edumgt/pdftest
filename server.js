@@ -1,25 +1,20 @@
-const express = require("express");
-const PDFDocument = require("pdfkit");
+const winax = require("winax");
 
-const app = express();
+const hwp = new winax.Object("HWPFrame.HwpObject");
 
-app.get("/make-pdf", (req, res) => {
-  const doc = new PDFDocument();
+// 한글 창 보이기
+hwp.XHwpWindows.Item(0).Visible = true;
 
-  // 브라우저에서 다운로드되도록 헤더 설정
-  res.setHeader("Content-Disposition", "attachment; filename=example.pdf");
-  res.setHeader("Content-Type", "application/pdf");
+// 새 문서
+hwp.Run("FileNew");
 
-  // PDF 내용을 response로 바로 출력
-  doc.pipe(res);
+// 텍스트 입력
+hwp.HAction.GetDefault("InsertText", hwp.HParameterSet.HInsertText.HSet);
+hwp.HParameterSet.HInsertText.Text = "안녕하세요. Node.js에서 HWP 문서를 생성했습니다!";
+hwp.HAction.Execute("InsertText", hwp.HParameterSet.HInsertText.HSet);
 
-  // PDF에 글자/도형 추가
-  doc.fontSize(20).text("Hello Node.js PDF!", 100, 100);
-  doc.text("서버에서 만든 PDF입니다 😃", 100, 150);
+// ✅ 파일 저장 (HWP 형식)
+hwp.SaveAs("C:\\Users\\user\\Desktop\\example.hwp", "HWP", "lock:false");
 
-  doc.end();
-});
-
-app.listen(3000, () => {
-  console.log("✅ PDF 서버 실행: http://localhost:3000/make-pdf");
-});
+// 종료
+hwp.Quit();

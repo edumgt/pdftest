@@ -2,7 +2,6 @@
   "name": "pdftest",
   "private": true,
   "version": "0.0.0",
-
   "scripts": {
     "dev": "vite",
     "build": "vite build",
@@ -11,9 +10,11 @@
   },
   "dependencies": {
     "express": "^5.1.0",
+    "jsonfile": "^6.2.0",
     "pdfkit": "^0.17.2",
     "react": "^19.1.1",
-    "react-dom": "^19.1.1"
+    "react-dom": "^19.1.1",
+    "winax": "^3.6.2"
   },
   "devDependencies": {
     "@eslint/js": "^9.33.0",
