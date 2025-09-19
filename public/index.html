@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Port Map Viewer</title>
+  <style>
+    body { margin: 0; background: #f5f5f5; }
+    canvas { display: block; margin: auto; background: #fff; border: 1px solid #ccc; }
+    #info {
+      text-align: center;
+      margin: 10px;
+      font-family: Arial, sans-serif;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+
+<div id="info">🌍 전세계 지도 위 항구 표시 예제</div>
+<canvas id="mapCanvas" width="1000" height="500"></canvas>
+
+<script>
+  // ✅ 항구 데이터 (fake JSON)
+  const ports = [
+    {"id":"1001","port":"Los Angeles","lat":33.7406,"lon":-118.276},
+    {"id":"2001","port":"Tokyo","lat":35.6762,"lon":139.6503},
+    {"id":"3001","port":"Veracruz","lat":19.1738,"lon":-96.1342}
+  ];
+
+  const canvas = document.getElementById("mapCanvas");
+  const ctx = canvas.getContext("2d");
+
+  // 지도 이미지 불러오기 (무료 world map png 사용)
+  const mapImage = new Image();
+  mapImage.src = "https://upload.wikimedia.org/wikipedia/commons/thumb/8/80/World_map_-_low_resolution.svg/1000px-World_map_-_low_resolution.svg.png";
+
+  mapImage.onload = function() {
+    // 지도 그리기
+    ctx.drawImage(mapImage, 0, 0, canvas.width, canvas.height);
+
+    // 포인트 그리기
+    ports.forEach(p => {
+      const {x, y} = latLonToXY(p.lat, p.lon, canvas.width, canvas.height);
+
+      // 빨간 점
+      ctx.beginPath();
+      ctx.arc(x, y, 5, 0, 2 * Math.PI);
+      ctx.fillStyle = "red";
+      ctx.fill();
+
+      // 항구 이름
+      ctx.font = "12px Arial";
+      ctx.fillStyle = "black";
+      ctx.fillText(p.port, x + 8, y - 5);
+    });
+  };
+
+  // ✅ 위도경도 → X,Y 변환 (단순 equirectangular projection)
+  function latLonToXY(lat, lon, width, height) {
+    const x = (lon + 180) * (width / 360);
+    const y = (90 - lat) * (height / 180);
+    return {x, y};
+  }
+</script>
+
+</body>
+</html>
