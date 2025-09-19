@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Pacific Shipping Simulation</title>
+  <title>Pacific Shipping Simulation (API)</title>
   <style>
     body { margin: 0; background: #f5f5f5; }
     canvas { display: block; margin: auto; background: #fff; border: 1px solid #ccc; }
@@ -11,112 +11,56 @@
 </head>
 <body>
 
-<div id="info">🚢 환태평양 해상 시뮬레이션</div>
+<div id="info">🚢 환태평양 해상 시뮬레이션 (API 연동)</div>
 <canvas id="mapCanvas" width="1200" height="800"></canvas>
 
 <script>
 const canvas = document.getElementById("mapCanvas");
 const ctx = canvas.getContext("2d");
 
-// SVG → PNG 변환된 고해상도 지도 (Natural Earth, Pacific focus)
+// 지도 이미지
 const mapImage = new Image();
-// 아래 URL은 예시, 실제 환경에서는 환태평양만 보이도록 잘라낸 SVG/PNG를 사용하는 게 권장됩니다
 mapImage.src = "https://upload.wikimedia.org/wikipedia/commons/8/80/World_map_-_low_resolution.svg";
 
-// 항구 데이터 (빨간 점)
-const ports = [
-  {"id":"2001","port":"Tokyo","lat":35.6762,"lon":139.6503},
-  {"id":"1001","port":"Los Angeles","lat":33.7406,"lon":-118.276},
-  {"id":"3001","port":"Veracruz","lat":19.1738,"lon":-96.1342}
-];
+// API 주소
+const API_BASE = "http://127.0.0.1:8080";  // FastAPI 서버 포트
 
-// 해상 경로 (항구 + 바다 경유지)
-const route = [
-  {lat:35.6762, lon:139.6503},    // Tokyo
-  {lat:38.0, lon:170.0},          // Pacific mid
-  {lat:33.7406, lon:-118.276},    // Los Angeles
-  {lat:25.0, lon:-110.0},         // Mexico Gulf entry
-  {lat:19.1738, lon:-96.1342}     // Veracruz
-];
-
-// 배 객체
-let ship = {
-  lat: route[0].lat,
-  lon: route[0].lon,
-  routeIndex: 1
-};
-
-const speed = 1000; // km / step (5초)
-
-// 위경도 → XY 변환
+// 위경도 → XY
 function latLonToXY(lat, lon, width, height) {
   const x = (lon + 180) * (width / 360);
   const y = (90 - lat) * (height / 180);
   return {x, y};
 }
 
-// Haversine 거리계산
-function distance(lat1, lon1, lat2, lon2) {
-  const R = 6371;
-  const dLat = (lat2-lat1) * Math.PI / 180;
-  const dLon = (lon2-lon1) * Math.PI / 180;
-  const a = Math.sin(dLat/2)**2 +
-            Math.cos(lat1*Math.PI/180) * Math.cos(lat2*Math.PI/180) *
-            Math.sin(dLon/2)**2;
-  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+// Port, Ship 데이터 로딩
+async function fetchData() {
+  const [portsRes, shipRes] = await Promise.all([
+    fetch(`${API_BASE}/ports`),
+    fetch(`${API_BASE}/ship`)
+  ]);
+  const ports = await portsRes.json();
+  const ship = await shipRes.json();
+  drawMap(ports, ship);
 }
 
-// 배 이동
-function moveShip() {
-  const target = route[ship.routeIndex];
-  const d = distance(ship.lat, ship.lon, target.lat, target.lon);
-
-  if (d < 20) {
-    ship.routeIndex = (ship.routeIndex + 1) % route.length;
-    console.log("도착:", target.lat, target.lon, "→ 다음 포인트");
-    return;
-  }
-
-  const ratio = speed / d;
-  ship.lat += (target.lat - ship.lat) * ratio;
-  ship.lon += (target.lon - ship.lon) * ratio;
-
-  drawMap();
-}
-
-// 지도 및 포인트 그리기
-function drawMap() {
+// 지도와 점 그리기
+function drawMap(ports, ship) {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   ctx.drawImage(mapImage, 0, 0, canvas.width, canvas.height);
 
-  // 항구 (빨간 점)
+  // Ports (빨간 점)
   ports.forEach(p => {
     const {x, y} = latLonToXY(p.lat, p.lon, 2000, 1000);
     const adjX = x * (canvas.width / 2000);
     const adjY = y * (canvas.height / 1000);
-
     ctx.beginPath();
     ctx.arc(adjX, adjY, 6, 0, 2 * Math.PI);
     ctx.fillStyle = "red";
     ctx.fill();
-    ctx.fillStyle = "black";
     ctx.fillText(p.port, adjX + 8, adjY - 5);
   });
 
-  // 해상 경로 (연결선)
-  ctx.beginPath();
-  ctx.strokeStyle = "blue";
-  ctx.lineWidth = 1.5;
-  route.forEach((p, idx) => {
-    const {x, y} = latLonToXY(p.lat, p.lon, 2000, 1000);
-    const adjX = x * (canvas.width / 2000);
-    const adjY = y * (canvas.height / 1000);
-    if (idx === 0) ctx.moveTo(adjX, adjY);
-    else ctx.lineTo(adjX, adjY);
-  });
-  ctx.stroke();
-
-  // 배 (파란 점)
+  // Ship (파란 점)
   const {x, y} = latLonToXY(ship.lat, ship.lon, 2000, 1000);
   const adjX = x * (canvas.width / 2000);
   const adjY = y * (canvas.height / 1000);
@@ -126,9 +70,10 @@ function drawMap() {
   ctx.fill();
 }
 
+// 지도 onload 후 주기적으로 API 호출
 mapImage.onload = () => {
-  drawMap();
-  setInterval(moveShip, 5000); // 5초마다 이동
+  fetchData();
+  setInterval(fetchData, 5000); // 5초마다 업데이트
 };
 </script>
 
