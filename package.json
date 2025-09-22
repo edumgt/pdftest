@@ -9,8 +9,10 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "cors": "^2.8.5",
     "express": "^5.1.0",
     "jsonfile": "^6.2.0",
+    "mongoose": "^8.18.1",
     "pdfkit": "^0.17.2",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
